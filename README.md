@@ -70,3 +70,11 @@ npm run desktop:build:win
 ```
 
 桌面入口为 desktop/main.cjs。渲染进程启用沙箱与上下文隔离、禁止 Node.js、禁止外部网络与新窗口；不暴露 IPC 或读取真实文件。导出使用系统保存对话框。正式应用所需的 AI、同步、实际提醒尚未接入。
+
+## Mac 实时开发版
+
+当前电脑为 Apple Silicon，已生成 `outputs/mac-live/mac-arm64/常安开发体验.app`，连接本机 127.0.0.1:5178 的 Vite 实时服务。修改 React 界面和 CSS 后自动更新；桌面菜单和入口改动需要重新打包并重启。
+
+以后双击项目中的 `启动Mac实时体验.command` 可以启动服务并打开 App；保留终端窗口。开发版需要本机源码与依赖，不作为离线发布包。使用 `npm run desktop:build:mac` 可生成独立离线 Mac App（尚未签名或公证）。
+
+常规发布包不会包含开发模式标记，仅开发包允许访问固定本机 HTTP/WebSocket 地址。虚构资料仍只在本机保存。

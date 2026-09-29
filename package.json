@@ -9,7 +9,10 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "desktop:start": "npm run build && electron .",
-    "desktop:build:win": "npm run build && electron-builder --win --x64 --publish never"
+    "desktop:build:win": "npm run build && electron-builder --win --x64 --publish never",
+    "desktop:dev:web": "vite --host 127.0.0.1 --port 5178 --strictPort",
+    "desktop:build:mac:live": "npm run build && electron-builder --mac --arm64 --dir --config desktop/mac-live.cjs --publish never",
+    "desktop:build:mac": "npm run build && electron-builder --mac --arm64 --dir --config.directories.output=../mac-app --publish never"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -60,6 +63,11 @@
     },
     "portable": {
       "artifactName": "ChangAn-${version}-Windows-x64-Portable.${ext}"
+    },
+    "mac": {
+      "category": "public.app-category.healthcare-fitness",
+      "identity": null,
+      "icon": "desktop/icon.icns"
     }
   }
 }
