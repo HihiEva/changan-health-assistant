@@ -1,0 +1,65 @@
+{
+  "name": "family-health-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "desktop:start": "npm run build && electron .",
+    "desktop:build:win": "npm run build && electron-builder --win --x64 --publish never"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^3.0.5"
+  },
+  "main": "desktop/main.cjs",
+  "description": "常安家庭健康助手：仅供虚构资料体验的离线原型",
+  "author": "ChangAn Prototype",
+  "build": {
+    "appId": "cn.changan.health.prototype",
+    "productName": "ChangAn",
+    "directories": {
+      "output": "../windows-app",
+      "buildResources": "desktop"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/main.cjs",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "desktop/icon.ico",
+      "signExecutable": false
+    },
+    "nsis": {
+      "artifactName": "ChangAn-${version}-Windows-x64-Setup.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "ChangAn-${version}-Windows-x64-Portable.${ext}"
+    }
+  }
+}
