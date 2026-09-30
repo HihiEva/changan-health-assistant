@@ -1,6 +1,6 @@
 {
   "name": "family-health-prototype",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -42,7 +42,9 @@
     "files": [
       "dist/**/*",
       "desktop/main.cjs",
-      "package.json"
+      "package.json",
+      "desktop/codex.cjs",
+      "desktop/preload.cjs"
     ],
     "asar": true,
     "win": {

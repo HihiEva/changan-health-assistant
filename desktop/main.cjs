@@ -1,7 +1,8 @@
-const { app, BrowserWindow, Menu, dialog, session } = require('electron');
+const { app, BrowserWindow, Menu, dialog, session, ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
-const livePreview = fs.existsSync(path.join(__dirname, 'dev-mode.json')) || (!app.isPackaged && process.argv.includes('--dev'));
+const codex = require('./codex.cjs');
+const livePreview = (app.isPackaged && fs.existsSync(path.join(__dirname, 'dev-mode.json'))) || (!app.isPackaged && process.argv.includes('--dev'));
 const devURL = 'http://127.0.0.1:5178';
 const { pathToFileURL } = require('node:url');
 app.setName('ChangAn Health Prototype');
@@ -12,6 +13,15 @@ else {
   app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } });
   app.whenReady().then(() => {
     const entry = path.join(__dirname, '../dist/index.html');
+    function checkSender(event) {
+      if (!window || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame) throw new Error('不允许的请求来源。');
+      const url = event.senderFrame.url;
+      if (url !== pathToFileURL(entry).href && !(livePreview && new URL(url).origin === devURL)) throw new Error('不允许的页面。');
+    }
+    const aiDirectory = path.join(app.getPath('userData'), 'ai-workspace');
+    ipcMain.handle('changan:ai-status', async event => { checkSender(event); return codex.status(aiDirectory); });
+    ipcMain.handle('changan:ai-chat', async (event, payload) => { checkSender(event); return codex.chat(aiDirectory, payload); });
+    app.on('before-quit', () => codex.shutdown());
     session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
     session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
@@ -22,7 +32,7 @@ else {
       item.setSaveDialogOptions({ title: '导出虚构体验资料', defaultPath: path.join(app.getPath('downloads'), path.basename(item.getFilename())) });
     });
     function createWindow() {
-      window = new BrowserWindow({ width: 1280, height: 900, minWidth: 700, minHeight: 600, title: '常安 · 家庭健康助手（体验原型）', backgroundColor: '#f6f7f2', icon: path.join(__dirname, '../dist/icon-512.png'), show: false, webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
+      window = new BrowserWindow({ width: 1280, height: 900, minWidth: 700, minHeight: 600, title: '常安 · 家庭健康助手（体验原型）', backgroundColor: '#f6f7f2', icon: path.join(__dirname, '../dist/icon-512.png'), show: false, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
       window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
       window.webContents.on('will-navigate', (event, url) => { if (url !== pathToFileURL(entry).href && !(livePreview && new URL(url).origin === devURL)) event.preventDefault(); });
       window.once('ready-to-show', () => window.show());

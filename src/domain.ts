@@ -15,7 +15,7 @@ export interface Pending {
   source: string; createdAt: string; updateId?: string; metric?: Metric; medication?: HealthRecord['medication'];
   status: '待确认' | '冲突待核对'; conflictId?: string;
 }
-export interface Message { id: string; memberId: MemberId; author: MemberId; role: 'user' | 'assistant'; text: string; at: string }
+export interface Message { id: string; memberId: MemberId; author: MemberId; role: 'user' | 'assistant'; text: string; at: string; provider?: 'mock' | 'codex'; model?: string }
 export interface Brief { id: string; memberId: MemberId; type: '每日' | '每周'; createdAt: string; text: string }
 export interface State { version: 1; actor: MemberId; selected: MemberId; grants: Grant[]; records: HealthRecord[]; pending: Pending[]; messages: Message[]; briefs: Brief[] }
 export const members: Member[] = [

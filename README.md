@@ -1,6 +1,6 @@
 # 常安 · 家庭健康助手
 
-React + TypeScript + Vite 制作的家庭健康网页 App 体验原型。仅使用虚构人物、药物、报告及模拟 AI 回复。
+React + TypeScript + Vite 制作的家庭健康网页 App 体验原型。仅使用虚构人物、药物和报告。桌面版支持选择模拟回复或本机 ChatGPT 订阅真实回复。
 
 ## 本地启动
 
@@ -37,7 +37,7 @@ npm run preview
 
 - `src/domain.ts` 定义成员、授权、记录、待确认、聊天、指标、药物历史与简报。
 - `PermissionService`、`ArchiveService`、`ReportService`、`ModelService`、`NotificationService`、`StorageService` 提供正式版可替换边界。
-- 原型在 localStorage 保存虚构数据，存储键为 `changan-demo-v1`。无后端、无密钥、无远程 AI 调用、无跨设备同步。
+- 原型在 localStorage 保存虚构数据，存储键为 `changan-demo-v1`。无云端后端、无跨设备同步。选择订阅模式时会将当前成员必要的虚构上下文发送给 OpenAI；登录凭证由官方 Codex 管理，不保存在网页状态中。
 - 聊天会留在浏览器，但不会自动成为正式档案。设置里的账号切换是演示功能，不能用来保护真实资料。
 - 文件选择器仅展示交互，不读取文件内容或上传文件；实际解析对象始终为内置样例。
 - 模拟回复采用预设逻辑；不识别全部自然语言、不判断真实疾病或药物副作用。
@@ -69,7 +69,7 @@ npm test
 npm run desktop:build:win
 ```
 
-桌面入口为 desktop/main.cjs。渲染进程启用沙箱与上下文隔离、禁止 Node.js、禁止外部网络与新窗口；不暴露 IPC 或读取真实文件。导出使用系统保存对话框。正式应用所需的 AI、同步、实际提醒尚未接入。
+桌面入口为 desktop/main.cjs。渲染进程启用沙箱与上下文隔离、禁止 Node.js、禁止外部网络与新窗口；仅暴露订阅状态和文字聊天 IPC，校验主窗口来源。通过官方 Codex App Server 接入 ChatGPT 登录，自动继承 macOS 已有 HTTPS 系统代理；不读取或导出登录凭证。导出使用系统保存对话框。同步与实际提醒尚未接入。
 
 ## Mac 实时开发版
 
@@ -78,3 +78,15 @@ npm run desktop:build:win
 以后双击项目中的 `启动Mac实时体验.command` 可以启动服务并打开 App；保留终端窗口。开发版需要本机源码与依赖，不作为离线发布包。使用 `npm run desktop:build:mac` 可生成独立离线 Mac App（尚未签名或公证）。
 
 常规发布包不会包含开发模式标记，仅开发包允许访问固定本机 HTTP/WebSocket 地址。虚构资料仍只在本机保存。
+
+## ChatGPT 订阅使用（v0.1.1）
+
+1. 安装官方 Codex，并使用 ChatGPT 登录。本次 Mac 已识别 Plus。
+2. 退出旧版 App，打开新版，在设置选择“检查订阅连接”。
+3. 选择模型，把聊天模式改为“ChatGPT 订阅”，进入“聊一聊”。
+4. 仅发送虚构信息；回答标注服务和模型，使用同一 ChatGPT 账号的 Codex 额度。
+5. 需要记录时点“将这段描述加入待确认”，核对后由本人确认。订阅回答不会自动写入档案。
+
+订阅模式每次开启 App 后默认关闭。报告、问候与周报继续模拟。没有 ChatGPT 登录、没有 Codex 或网络错误时显示错误，不回退到收费 API。模型使用临时线程，未提供本机环境访问或档案写入工具；不从 ChatGPT 自动导入历史对话。
+
+已验证 Mac 的系统代理继承、真实回答，以及桌面 preload/IPC 设置与聊天流程。Windows 的模拟界面继续可用，订阅连接还需 Windows 实机验证；本入口要求可启动的官方 Codex CLI。Mac 分发包尚未签名或公证。普通网页和手机 PWA 仍不能直接调用桌面 Codex。
