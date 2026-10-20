@@ -1,6 +1,6 @@
 {
   "name": "family-health-prototype",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,8 +16,11 @@
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
+    "pdfjs-dist": "^6.3.289",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
@@ -30,7 +33,7 @@
     "vitest": "^3.0.5"
   },
   "main": "desktop/main.cjs",
-  "description": "常安家庭健康助手：仅供虚构资料体验的离线原型",
+  "description": "常安家庭健康助手：个人档案、ChatGPT 订阅聊天和附件解读",
   "author": "ChangAn Prototype",
   "build": {
     "appId": "cn.changan.health.prototype",
@@ -44,7 +47,8 @@
       "desktop/main.cjs",
       "package.json",
       "desktop/codex.cjs",
-      "desktop/preload.cjs"
+      "desktop/preload.cjs",
+      "desktop/attachments.cjs"
     ],
     "asar": true,
     "win": {

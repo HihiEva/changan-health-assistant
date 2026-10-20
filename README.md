@@ -1,92 +1,52 @@
 # 常安 · 家庭健康助手
 
-React + TypeScript + Vite 制作的家庭健康网页 App 体验原型。仅使用虚构人物、药物和报告。桌面版支持选择模拟回复或本机 ChatGPT 订阅真实回复。
+React、TypeScript、Vite 与 Electron 制作的健康助手。支持独立个人档案、虚构家庭体验、ChatGPT 订阅聊天、Markdown 回复及聊天附件。
 
-## 本地启动
+## Windows 安装
 
-需要 Node.js 22 或更新版本。在本文件所在目录执行：
+在本仓库 Releases 下载 `ChangAn-0.1.2-Windows-x64-Setup.exe`，适用于 Windows 10/11 x64。安装应用本身不需要 Node.js。也提供 Portable.exe 免安装版及 SHA256SUMS.txt。
 
-```sh
-npm install
-npm run dev
-```
+真实聊天需要在使用的电脑安装官方 Codex CLI，并用 ChatGPT 登录。进入“我的个人档案”填写、核对资料，在“聊一聊”点击“连接并启用 ChatGPT”，确认发送范围后聊天。订阅模式每次启动默认关闭，错误不会自动回退到付费 API。
 
-打开终端显示的本地地址（通常为 `http://localhost:5173`）。手机与电脑在同一局域网时，可访问终端显示的 Network 地址；防火墙可能需要允许访问。手机安装 PWA 与离线体验需要 HTTPS，普通局域网 HTTP 地址仅用于页面体验。
+照片、文字 PDF、TXT、Markdown、CSV 可通过“添加附件”发送。每次最多 4 个、单个 8 MB、合计 20 MB；扫描 PDF 请改用照片。附件只在本次消息中提供给 AI，后续需要原始内容时请重新添加。
 
-也可使用启动脚本：Mac 双击 `启动体验.command`，Windows 双击 `启动体验.bat`。需要已安装 Node.js；脚本构建后启动预览服务，在终端里显示可打开的地址。
+## 数据
 
-```sh
-npm test
-npm run build
-npm run preview
-```
+个人档案与虚构演示分别存储在本机。未确认资料不会进入档案或发送给 AI；已确认资料、近期聊天、本次消息和本次附件会在用户启用聊天后发送给 OpenAI。回复不会自动修改档案，确认仅表示用户核对录入内容，不代表医疗确诊。
 
-`preview` 默认使用 `http://localhost:4173`，适合检查构建结果。PWA service worker 只在构建版注册；必须用 HTTPS 或当前电脑的 localhost 验证。
+没有跨设备同步或个人档案导入功能。可导出 JSON、Markdown 备份。尚无资料加密、应用锁、真实家庭身份认证或定时通知。仓库及安装包不包含实际用户健康资料、聊天、登录凭证。
 
-## 体验顺序
+## 本地开发与验证
 
-1. 默认是林安的虚构账号。点击“说说身体感受”，修改待保存卡片，再确认保存。
-2. 去“健康档案”查询该记录；点击“准备更正”，修改草稿并确认；展开历史查看旧版本。
-3. 导入“标准”样例报告并确认。再次导入会提示重复；导入“冲突”版本则需要核对，选择保留原记录或更正。
-4. 去设置切换到周宁，给林安“协助整理”权限；切回林安，选择周宁的档案，整理虚构近况。林安不能确认周宁的草稿，切回周宁才能保存。
-5. 在周宁账号撤回授权，切回林安后将无法再访问周宁资料。
-6. “今日与本周”可模拟生成问候、周报；它们不会修改健康状态或服药记录。
-7. 刷新仍保留本浏览器体验状态；设置里可导出或重置。
-
-## 数据与接口
-
-- `src/domain.ts` 定义成员、授权、记录、待确认、聊天、指标、药物历史与简报。
-- `PermissionService`、`ArchiveService`、`ReportService`、`ModelService`、`NotificationService`、`StorageService` 提供正式版可替换边界。
-- 原型在 localStorage 保存虚构数据，存储键为 `changan-demo-v1`。无云端后端、无跨设备同步。选择订阅模式时会将当前成员必要的虚构上下文发送给 OpenAI；登录凭证由官方 Codex 管理，不保存在网页状态中。
-- 聊天会留在浏览器，但不会自动成为正式档案。设置里的账号切换是演示功能，不能用来保护真实资料。
-- 文件选择器仅展示交互，不读取文件内容或上传文件；实际解析对象始终为内置样例。
-- 模拟回复采用预设逻辑；不识别全部自然语言、不判断真实疾病或药物副作用。
-- 周报是生成时的档案快照，尚无可靠上周对照，故不自动推断健康趋势。
-- Web manifest 与 service worker 提供安装和静态页面离线缓存；不请求通知权限，没有后台定时通知。
-
-## 正式上线前
-
-需独立完成供应商与地区可用性确认、预算核算、真实身份认证、服务端成员权限校验、云端数据库与报告存储、加密和备份恢复、真实模型与报告解析、服务器定时任务及手机通知实测。每月 100—300 元是目标预算，不是已报价或成本保证。
-
-设备测试中使用浏览器自动化与视口检查不能替代实体 iPhone Safari、安卓 Chrome、Mac Safari 和 Windows Edge 验收。没有这些实体测试证据时，不应声称已全部验证。
-
-## Windows 桌面应用
-
-打包产物位于相邻的 windows-app 目录：
-
-- `ChangAn-0.1.0-Windows-x64-Setup.exe`：安装版，适合日常体验；可选择目录并创建桌面快捷方式。
-- `ChangAn-0.1.0-Windows-x64-Portable.exe`：便携版，直接双击，无需安装 Node.js 或启动网页服务。
-
-面向 Windows 10/11 64 位。界面和所有静态资源内置，体验无需联网。两个版本使用相同的本机用户数据目录；请不要同时运行。便携指无需安装程序，体验资料仍保存在 Windows 用户配置目录，不随 EXE 移动。网页体验与桌面体验的本地资料彼此独立；没有跨设备同步。
-
-本次没有代码签名证书，系统可能显示未知发布者。请通过可信 Release 核对 SHA-256；无需关闭系统安全保护。Mac 不能运行 Windows EXE；此处进行了跨平台构建与包内容检查，Windows 原生启动、安装、卸载仍需实际设备验证。
-
-本地复现：
+需要 Node.js 24：
 
 ```sh
 npm ci
 npm test
-npm run desktop:build:win
+npm run build
+npm run dev
 ```
 
-桌面入口为 desktop/main.cjs。渲染进程启用沙箱与上下文隔离、禁止 Node.js、禁止外部网络与新窗口；仅暴露订阅状态和文字聊天 IPC，校验主窗口来源。通过官方 Codex App Server 接入 ChatGPT 登录，自动继承 macOS 已有 HTTPS 系统代理；不读取或导出登录凭证。导出使用系统保存对话框。同步与实际提醒尚未接入。
+普通浏览器可体验界面，但无法直接调用电脑 Codex。桌面开发使用 `npm run desktop:start`。
 
-## Mac 实时开发版
+```sh
+npm run desktop:build:win
+npm run desktop:build:mac
+npm run desktop:build:mac:live
+```
 
-当前电脑为 Apple Silicon，已生成 `outputs/mac-live/mac-arm64/常安开发体验.app`，连接本机 127.0.0.1:5178 的 Vite 实时服务。修改 React 界面和 CSS 后自动更新；桌面菜单和入口改动需要重新打包并重启。
+Mac 实时入口为 `启动Mac实时体验.command`，会将运行用 App 复制到 `~/Applications` 并做本地签名，避免同步文件夹元数据干扰签名。通过用户会话后台服务启动 127.0.0.1:5178 的预览；启动后可关闭终端。实时版依赖源码和 Node.js，界面修改会实时生效；桌面主进程修改需重新打包并退出旧 App。
 
-以后双击项目中的 `启动Mac实时体验.command` 可以启动服务并打开 App；保留终端窗口。开发版需要本机源码与依赖，不作为离线发布包。使用 `npm run desktop:build:mac` 可生成独立离线 Mac App（尚未签名或公证）。
+Windows 发布由 `.github/workflows/windows-release.yml` 在原生 Windows runner 构建：测试、打包、静默安装、启动应用检查界面及附件桥接、生成校验值，再上传 Release。真实 Windows 订阅连接和用户日常安装体验仍需实际电脑验证。
 
-常规发布包不会包含开发模式标记，仅开发包允许访问固定本机 HTTP/WebSocket 地址。虚构资料仍只在本机保存。
+## 结构
 
-## ChatGPT 订阅使用（v0.1.1）
+- `src/domain.ts`：记录、授权、确认、更正、导出与虚构场景。
+- `src/personal.ts`：个人资料及与演示模式隔离的本地存储。
+- `src/ai.ts`：当前成员上下文与聊天记录。
+- `src/MarkdownMessage.tsx`：Markdown 显示，不执行模型返回的 HTML。
+- `desktop/main.cjs` / `preload.cjs`：受来源校验的桌面接口。
+- `desktop/codex.cjs`：官方 Codex App Server 订阅连接，不读取登录凭证，无工具执行或文件写入授权。
+- `desktop/attachments.cjs`：读取用户选择的附件并在本机解析 PDF 文字。
 
-1. 安装官方 Codex，并使用 ChatGPT 登录。本次 Mac 已识别 Plus。
-2. 退出旧版 App，打开新版，在设置选择“检查订阅连接”。
-3. 选择模型，把聊天模式改为“ChatGPT 订阅”，进入“聊一聊”。
-4. 仅发送虚构信息；回答标注服务和模型，使用同一 ChatGPT 账号的 Codex 额度。
-5. 需要记录时点“将这段描述加入待确认”，核对后由本人确认。订阅回答不会自动写入档案。
-
-订阅模式每次开启 App 后默认关闭。报告、问候与周报继续模拟。没有 ChatGPT 登录、没有 Codex 或网络错误时显示错误，不回退到收费 API。模型使用临时线程，未提供本机环境访问或档案写入工具；不从 ChatGPT 自动导入历史对话。
-
-已验证 Mac 的系统代理继承、真实回答，以及桌面 preload/IPC 设置与聊天流程。Windows 的模拟界面继续可用，订阅连接还需 Windows 实机验证；本入口要求可启动的官方 Codex CLI。Mac 分发包尚未签名或公证。普通网页和手机 PWA 仍不能直接调用桌面 Codex。
+正式上线仍需完成身份认证、服务端权限、同步、加密、备份恢复和通知测试。安装包尚未商业签名，Mac 尚未公证。

@@ -15,16 +15,16 @@ export interface Pending {
   source: string; createdAt: string; updateId?: string; metric?: Metric; medication?: HealthRecord['medication'];
   status: '待确认' | '冲突待核对'; conflictId?: string;
 }
-export interface Message { id: string; memberId: MemberId; author: MemberId; role: 'user' | 'assistant'; text: string; at: string; provider?: 'mock' | 'codex'; model?: string }
+export interface Message { id: string; memberId: MemberId; author: MemberId; role: 'user' | 'assistant'; text: string; at: string; provider?: 'mock' | 'codex'; model?: string; attachments?: { name: string; kind: string; size: number }[] }
 export interface Brief { id: string; memberId: MemberId; type: '每日' | '每周'; createdAt: string; text: string }
-export interface State { version: 1; actor: MemberId; selected: MemberId; grants: Grant[]; records: HealthRecord[]; pending: Pending[]; messages: Message[]; briefs: Brief[] }
+export interface State { version: 1; dataMode?: 'personal'; actor: MemberId; selected: MemberId; grants: Grant[]; records: HealthRecord[]; pending: Pending[]; messages: Message[]; briefs: Brief[] }
 export const members: Member[] = [
   { id: 'lin', name: '林安', initials: '林', role: '体验账号 A', goal: '逐步建立运动习惯，观察身体恢复' },
   { id: 'zhou', name: '周宁', initials: '周', role: '体验账号 B', goal: '规律作息，整理历次检查与用药' },
 ];
 export const uid = () => crypto.randomUUID();
 export const stamp = () => new Date().toISOString();
-export const person = (id: MemberId) => members.find(m => m.id === id)!;
+export const person = (id: MemberId, s?: State): Member => s?.dataMode === 'personal' ? { id: 'lin', name: '我', initials: '我', role: '个人档案', goal: s.records.find(r => r.source === '本人自述 · goal')?.text.replace(/^主要目标：/, '') || '目标尚未说明' } : members.find(m => m.id === id)!;
 export function seed(): State {
   const at = '2026-09-25T00:00:00.000Z';
   return {
@@ -42,9 +42,9 @@ export function seed(): State {
 }
 export interface PermissionService { level(state: State, owner: MemberId): '本人' | GrantLevel | null; canView(state: State, owner: MemberId): boolean; canDraft(state: State, owner: MemberId): boolean }
 export const permissions: PermissionService = {
-  level: (s, owner) => s.actor === owner ? '本人' : s.grants.find(g => g.owner === owner && g.viewer === s.actor)?.level ?? null,
-  canView: (s, owner) => s.actor === owner || s.grants.some(g => g.owner === owner && g.viewer === s.actor),
-  canDraft: (s, owner) => s.actor === owner || s.grants.some(g => g.owner === owner && g.viewer === s.actor && g.level === '协助整理'),
+  level: (s, owner) => s.dataMode === 'personal' ? (owner === 'lin' && s.actor === 'lin' ? '本人' : null) : s.actor === owner ? '本人' : s.grants.find(g => g.owner === owner && g.viewer === s.actor)?.level ?? null,
+  canView: (s, owner) => s.dataMode === 'personal' ? owner === 'lin' && s.actor === 'lin' : s.actor === owner || s.grants.some(g => g.owner === owner && g.viewer === s.actor),
+  canDraft: (s, owner) => s.dataMode === 'personal' ? owner === 'lin' && s.actor === 'lin' : s.actor === owner || s.grants.some(g => g.owner === owner && g.viewer === s.actor && g.level === '协助整理'),
 };
 const requireView = (s: State, owner: MemberId) => { if (!permissions.canView(s, owner)) throw new Error('未获授权，不能访问该成员资料。'); };
 const requireDraft = (s: State, owner: MemberId) => { if (!permissions.canDraft(s, owner)) throw new Error('只有查看权限，不能整理或修改资料。'); };
@@ -107,16 +107,18 @@ export function correctMedication(s: State, id: string, medication: NonNullable<
   return { ...s, pending: s.pending.map(item => item.id === id ? { ...item, medication, text: medicationText(medication) } : item) };
 }
 export function grant(s: State, viewer: MemberId, level: GrantLevel | null): State {
+  if (s.dataMode === 'personal') throw new Error('个人资料不参与体验账号共享。');
   if (viewer === s.actor) throw new Error('不能授权给自己。');
   const grants = s.grants.filter(g => !(g.owner === s.actor && g.viewer === viewer));
   if (level) grants.push({ owner: s.actor, viewer, level });
   return { ...s, grants };
 }
-export function switchAccount(s: State, actor: MemberId): State { return { ...s, actor, selected: actor }; }
+export function switchAccount(s: State, actor: MemberId): State { if (s.dataMode === 'personal') throw new Error('个人资料不能切换到体验账号。'); return { ...s, actor, selected: actor }; }
 export function selectMember(s: State, owner: MemberId): State { requireView(s, owner); return { ...s, selected: owner }; }
 export interface ReportService { importSample(s: State, owner: MemberId, variant: '标准' | '冲突'): State; correctMetric(s: State, id: string, value: number): State }
 export const reports: ReportService = {
   importSample(s, owner, variant) {
+    if (s.dataMode === 'personal') throw new Error('样例报告不能导入个人档案。');
     requireDraft(s, owner);
     const metric: Metric = { name: '空腹血糖', value: variant === '标准' ? 5.2 : 6.2, unit: 'mmol/L', range: '3.9—6.1（样例范围）', date: '2026-09-20', position: '样例报告第1页 · 第1行', reportKey: `${owner}-sample-20260920-glucose` };
     const matches = (m?: Metric) => m?.reportKey === metric.reportKey;
@@ -124,7 +126,7 @@ export const reports: ReportService = {
     const pending = s.pending.find(p => p.memberId === owner && matches(p.metric));
     if (pending) throw new Error('这份报告已有待核对条目，请先完成确认。');
     if (old?.metric?.value === metric.value) throw new Error('相同样例报告已经入档，无需重复保存。');
-    return archive.draft(s, { memberId: owner, kind: '检查', metric, text: `2026-09-20 空腹血糖 ${metric.value} ${metric.unit}；参考范围 ${metric.range}。`, source: `内置虚构报告 · ${variant}版本 · ${person(owner).name}`, status: old ? '冲突待核对' : '待确认', conflictId: old?.id });
+    return archive.draft(s, { memberId: owner, kind: '检查', metric, text: `2026-09-20 空腹血糖 ${metric.value} ${metric.unit}；参考范围 ${metric.range}。`, source: `内置虚构报告 · ${variant}版本 · ${person(owner, s).name}`, status: old ? '冲突待核对' : '待确认', conflictId: old?.id });
   },
   correctMetric(s, id, value) {
     const p = s.pending.find(p => p.id === id); if (!p?.metric) throw new Error('找不到指标。');
@@ -157,6 +159,7 @@ export const model: ModelService = {
   },
 };
 export function sendMessage(s: State, owner: MemberId, input: string): State {
+  if (s.dataMode === 'personal') throw new Error('个人档案请使用真实聊天；模拟回复仅供演示。');
   requireView(s, owner);
   if (!input.trim()) return s;
   // Simulation never executes instructions from a conversation as tool calls.
@@ -188,13 +191,13 @@ export const notifications: NotificationService = {
     const waiting = s.pending.filter(p => p.memberId === owner);
     const last = rows.filter(r => r.kind === '日常').at(-1);
     const text = type === '每日' ? `早上好，${person(owner).name}。${last ? '上次确认的日常记录是：' + last.text : '目前没有已确认的近况。'}\n今天身体感觉怎么样？` :
-      `目的\n${person(owner).goal}\n\n已存档 · ${rows.length}条\n${rows.map(r => '• ' + r.text).join('\n')}\n\n待确认 · ${waiting.length}条\n${waiting.map(p => '• ' + p.text).join('\n') || '暂无待确认内容。'}\n\n规则\n本人确认后入档；一次问一个问题；不自动调整用药；未回复不生成健康状态或服药记录。\n\n开放问题\n${last ? '近期日常活动的感受有没有变化？' : '你希望先从哪一类健康信息开始？'}\n\n待办\n${waiting.length ? '核对待确认内容。' : '按需补充近况，无需固定打卡。'}\n\n本周变化\n本简报为当前档案快照，尚无可靠的上周对照，不推断改善或恶化。`;
+      `目的\n${person(owner, s).goal}\n\n已存档 · ${rows.length}条\n${rows.map(r => '• ' + r.text).join('\n')}\n\n待确认 · ${waiting.length}条\n${waiting.map(p => '• ' + p.text).join('\n') || '暂无待确认内容。'}\n\n规则\n本人确认后入档；一次问一个问题；不自动调整用药；未回复不生成健康状态或服药记录。\n\n开放问题\n${last ? '近期日常活动的感受有没有变化？' : '你希望先从哪一类健康信息开始？'}\n\n待办\n${waiting.length ? '核对待确认内容。' : '按需补充近况，无需固定打卡。'}\n\n本周变化\n本简报为当前档案快照，尚无可靠的上周对照，不推断改善或恶化。`;
     return { ...s, briefs: [...s.briefs, { id: uid(), memberId: owner, type, createdAt: stamp(), text }] };
   },
 };
 export const STORAGE_KEY = 'changan-demo-v1';
 export interface StorageService { load(): State; save(state: State): void; reset(): State }
-function validState(value: unknown): value is State {
+export function validState(value: unknown): value is State {
   if (!value || typeof value !== 'object') return false;
   const s = value as State;
   const validMember = (id: unknown) => members.some(m => m.id === id);
@@ -223,7 +226,7 @@ export const storage: StorageService = {
 };
 export function exportMember(s: State, owner: MemberId, format: 'json' | 'md'): string {
   requireView(s, owner);
-  const data = { prototype: true, member: person(owner), records: archive.list(s, owner), pending: s.pending.filter(p => p.memberId === owner), messages: s.messages.filter(m => m.memberId === owner), briefs: s.briefs.filter(b => b.memberId === owner) };
+  const data = { prototype: true, dataMode: s.dataMode || 'demo', member: person(owner, s), records: archive.list(s, owner), pending: s.pending.filter(p => p.memberId === owner), messages: s.messages.filter(m => m.memberId === owner), briefs: s.briefs.filter(b => b.memberId === owner) };
   if (format === 'json') return JSON.stringify(data, null, 2);
-  return `# ${person(owner).name} · 虚构体验档案\n\n仅为原型数据，不是医疗记录。\n\n## 已确认\n\n${data.records.map(r => `### ${r.kind}\n${r.text}\n\n来源：${r.source}\n确认时间：${r.confirmedAt}\n历史：${r.history.map(h => h.text).join('；') || '无'}`).join('\n\n')}\n\n## 待确认（不是档案事实）\n\n${data.pending.map(p => p.text).join('\n\n') || '无'}\n\n## 简报\n\n${data.briefs.map(b => b.text).join('\n\n') || '无'}`;
+  return `# ${person(owner, s).name} · ${s.dataMode === 'personal' ? '个人档案' : '虚构体验档案'}\n\n${s.dataMode === 'personal' ? '本人自述，未经医疗核验。' : '仅为原型数据，不是医疗记录。'}\n\n## 已确认\n\n${data.records.map(r => `### ${r.kind}\n${r.text}\n\n来源：${r.source}\n确认时间：${r.confirmedAt}\n历史：${r.history.map(h => h.text).join('；') || '无'}`).join('\n\n')}\n\n## 待确认（不是档案事实）\n\n${data.pending.map(p => p.text).join('\n\n') || '无'}\n\n## 简报\n\n${data.briefs.map(b => b.text).join('\n\n') || '无'}`;
 }
